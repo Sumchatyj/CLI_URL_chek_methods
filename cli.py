@@ -1,17 +1,15 @@
-import asyncclick
-import re
-import aiohttp
 import asyncio
 import json
+import re
+from http import HTTPStatus
 
+import aiohttp
+import asyncclick
 
 EXPRESSION = (
-    r"(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\."
-    r"[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|"
-    r"https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\."
-    r"[a-zA-Z0-9]+\.[^\s]{2,})"
+    r"^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]"
+    r"{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$"
 )
-STRINGS = ['http://www.foufos.gr', 'https://google.com', 'google.com']
 
 
 def validate_url(number: int, url: str) -> bool:
@@ -22,29 +20,35 @@ def validate_url(number: int, url: str) -> bool:
         return True
 
 
-async def check_methods(session, url: str,):
+async def check_methods(
+    session,
+    url: str,
+) -> dict:
     result = {}
-    async with session.get(url) as resp:
-        if resp.status != 405:
-            result['GET'] = resp.status
+    try:
+        async with session.get(url) as resp:
+            if resp.status != HTTPStatus.METHOD_NOT_ALLOWED:
+                result["GET"] = resp.status
+    except Exception:
+        return "try another url"
     async with session.head(url) as resp:
-        if resp.status != 405:
-            result['HEAD'] = resp.status
+        if resp.status != HTTPStatus.METHOD_NOT_ALLOWED:
+            result["HEAD"] = resp.status
     async with session.options(url) as resp:
-        if resp.status != 405:
-            result['OPTIONS'] = resp.status
+        if resp.status != HTTPStatus.METHOD_NOT_ALLOWED:
+            result["OPTIONS"] = resp.status
     async with session.post(url) as resp:
-        if resp.status != 405:
-            result['POST'] = resp.status
+        if resp.status != HTTPStatus.METHOD_NOT_ALLOWED:
+            result["POST"] = resp.status
     async with session.put(url) as resp:
-        if resp.status != 405:
-            result['PUT'] = resp.status
+        if resp.status != HTTPStatus.METHOD_NOT_ALLOWED:
+            result["PUT"] = resp.status
     async with session.patch(url) as resp:
-        if resp.status != 405:
-            result['PATCH'] = resp.status
+        if resp.status != HTTPStatus.METHOD_NOT_ALLOWED:
+            result["PATCH"] = resp.status
     async with session.delete(url) as resp:
-        if resp.status != 405:
-            result['DELETE'] = resp.status
+        if resp.status != HTTPStatus.METHOD_NOT_ALLOWED:
+            result["DELETE"] = resp.status
     return result
 
 
@@ -54,19 +58,17 @@ async def check_all_urls(session, urls: dict):
         task = asyncio.create_task(check_methods(session, url))
         tasks.append(task)
     result = await asyncio.gather(*tasks)
-    counter = 0
-    for url in urls:
-        urls[url] = result[counter]
-        counter += 1
+    for number, url in enumerate(urls):
+        urls[url] = result[number]
     return urls
 
 
 @asyncclick.command()
-@asyncclick.argument('strings', nargs=-1)
+@asyncclick.argument("strings", nargs=-1)
 async def main(strings) -> None:
     result = {}
     for number, string in enumerate(strings):
-        if validate_url(number, string) is True:
+        if validate_url(number, string):
             result[string] = None
     async with aiohttp.ClientSession() as session:
         await check_all_urls(session, result)
@@ -74,5 +76,5 @@ async def main(strings) -> None:
         print(json.dumps(result, indent=4))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())
