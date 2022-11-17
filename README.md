@@ -2,7 +2,7 @@
 
 ## Description
 
-This is a CLI script for checking http methods by URL. it took 8 hours to complete the job
+This is a CLI script for checking http methods by URL. it took 8 hours to complete the job.
 
 
 ## Getting started
@@ -10,8 +10,8 @@ This is a CLI script for checking http methods by URL. it took 8 hours to comple
 ### Dependencies
 
 * Python > 3.7
-* aiohttp==3.8.3
-* pytest==7.2.0
+* aiohttp == 3.8.3
+* pytest == 7.2.0
 
 ### Installing
 
